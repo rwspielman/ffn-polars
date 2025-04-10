@@ -1,0 +1,30 @@
+[project]
+name = "ffn-polars"
+version = "0.1.0"
+description = "A polars implementation of ffn"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["polars>=1.25.2"]
+keywords = [
+  "python",
+  "finance",
+  "quant",
+  "quant finance",
+  "algotrading",
+  "algorithmic trading",
+  "high performance computing",
+]
+
+[project.scripts]
+ffn-polars = "ffn_polars:__init__"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = ["pytest>=8.3.5"]
