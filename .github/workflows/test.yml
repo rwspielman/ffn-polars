@@ -1,0 +1,38 @@
+name: Test and Coverage
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Create venv and install deps
+        run: |
+          uv venv
+          uv sync
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest --cov=ffn_polars --cov-branch --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: ffn-polars
+          token: ${{ secrets.CODECOV_TOKEN }}

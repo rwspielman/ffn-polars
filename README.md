@@ -1,5 +1,8 @@
 # ffn-polars
 
+[![codecov](https://codecov.io/gh/rwspielman/ffn-polars/graph/badge.svg?token=RDWPURUB3K)](https://codecov.io/gh/rwspielman/ffn-polars)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 🚀 A blazing-fast, Polars-powered reimplementation of [`ffn`](https://github.com/pmorissette/ffn) for portfolio analytics and performance measurement.
 
 ## ✨ What is this?
