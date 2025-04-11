@@ -12,8 +12,10 @@ from .core import (
     infer_freq,
     deannualize,
     to_excess_returns,
+    calc_risk_return_ratio,
     calc_sharpe,
     calc_information_ratio,
+    annualize,
 )
 
 __all__ = [
@@ -32,4 +34,6 @@ __all__ = [
     "to_excess_returns",
     "calc_sharpe",
     "calc_information_ratio",
+    "annualize",
+    "calc_risk_return_ratio",
 ]

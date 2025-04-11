@@ -85,10 +85,16 @@ def calc_mtd(daily_prices, monthly_prices):
     Use daily_prices if prices are only available from same month
     else use monthly_prices
     """
-    if len(monthly_prices) == 1:
+    if monthly_prices is None:
         return pl.col(daily_prices).last() / pl.col(daily_prices).first() - 1
     else:
-        return pl.col(daily_prices).last() / pl.col(monthly_prices).tail(2).first() - 1
+        return (
+            pl.when(pl.col(monthly_prices).len() == 1)
+            .then(pl.col(daily_prices).last() / pl.col(daily_prices).first() - 1)
+            .otherwise(
+                pl.col(daily_prices).last() / pl.col(monthly_prices).tail(2).first() - 1
+            )
+        )
 
 
 def calc_ytd(daily_prices, yearly_prices):
@@ -220,6 +226,14 @@ def calc_sharpe(
     return sharpe_expr
 
 
+def calc_risk_return_ratio(returns):
+    """
+    Calculates the return / risk ratio. Basically the
+    `Sharpe ratio <https://www.investopedia.com/terms/s/sharperatio.asp>`_ without factoring in the `risk-free rate <https://www.investopedia.com/terms/r/risk-freerate.asp>`_.
+    """
+    return calc_sharpe(returns)
+
+
 def calc_information_ratio(returns_col: str, benchmark_col: str) -> pl.Expr:
     """
     Returns a Polars expression that computes the Information Ratio.
@@ -236,3 +250,29 @@ def calc_information_ratio(returns_col: str, benchmark_col: str) -> pl.Expr:
         .fill_null(0.0)
         .alias(f"{returns_col}_ir")
     )
+
+
+def calc_total_return(prices):
+    """
+    Calculates the total return of a series.
+
+    last / first - 1
+    """
+    return (pl.col(prices).last() / pl.col(prices).first()) - 1
+
+
+def annualize(returns_col: str, durations_col: str, one_year: float = 365.0) -> pl.Expr:
+    """
+    Returns a Polars expression to annualize returns given durations.
+
+    Args:
+        returns_col (str): Name of the column with returns (e.g., 0.05 = 5%).
+        durations_col (str): Name of the column with durations (e.g., days held).
+        one_year (float): Number of periods in a year (default 365.0 for days).
+
+    Returns:
+        pl.Expr: Expression computing annualized return.
+    """
+    return (
+        (1.0 + pl.col(returns_col)) ** (one_year / pl.col(durations_col)) - 1.0
+    ).alias("annualized")
