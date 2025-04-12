@@ -15,7 +15,15 @@ from .core import (
     calc_risk_return_ratio,
     calc_sharpe,
     calc_information_ratio,
+    calc_prob_mom,
+    calc_total_return,
     annualize,
+    sortino_ratio,
+    calc_calmar_ratio,
+    ulcer_index,
+    ulcer_performance_index,
+    infer_nperiods,
+    resample_returns,
 )
 
 __all__ = [
@@ -34,6 +42,14 @@ __all__ = [
     "to_excess_returns",
     "calc_sharpe",
     "calc_information_ratio",
+    "calc_prob_mom",
+    "calc_total_return",
     "annualize",
     "calc_risk_return_ratio",
+    "sortino_ratio",
+    "calc_calmar_ratio",
+    "ulcer_index",
+    "ulcer_performance_index",
+    "infer_nperiods",
+    "resample_returns",
 ]

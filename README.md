@@ -21,3 +21,42 @@
 ```bash
 pip install ffn-polars
 ```
+
+## 🤝 Contributing
+
+Contributions welcome! Open an issue or PR if you’d like to improve a function or add a new metric.
+
+## 📄 License
+
+MIT. Originally inspired by [`ffn`](https://github.com/pmorissette/ffn) by Pierre R. Morissette.
+
+## TODOs
+
+- Add more tests
+- Add more support for nanosecond timestamps
+
+### Tick Data Ideas
+
+#### Microstructure Metrics
+
+- Trade Rate
+- Inter-Trade Time
+- Quote-to-Trade Ratio
+- Volume Profile
+- Tick Imbalance
+- Price Impact
+
+#### Volatility and Returns (High-Frequency)
+
+- Realized Volatility
+- Micro Returns
+- Rolling Volatility
+- OHLC Bars
+- Garman-Klass / Parkinson
+
+#### Latency / Time-dynamics
+
+- Burst Detection
+- Idle time
+- Trade Clustering
+- Anomaly Detection

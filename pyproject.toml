@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "A polars implementation of ffn"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["polars>=1.25.2"]
+dependencies = [
+    "numpy>=2.2.4",
+ "polars>=1.25.2",
+ "pyarrow>=19.0.1",
+]
 keywords = [
   "python",
   "finance",
@@ -19,8 +23,12 @@ keywords = [
 # ffn-polars = "ffn_polars:__init__"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+module-name = "ffn_polars._rust"
+bindings = "pyo3"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

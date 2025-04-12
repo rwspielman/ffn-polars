@@ -25,6 +25,11 @@ jobs:
           uv venv
           uv sync
 
+      - name: Install Rust extension via maturin
+        run: |
+          uv pip install maturin
+          uv run maturin develop
+
       - name: Run tests with coverage
         run: |
           uv run pytest --cov=ffn_polars --cov-branch --cov-report=term-missing --cov-report=xml

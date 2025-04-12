@@ -1,0 +1,19 @@
+[package]
+name = "ffn_polars"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"] # Required for building Python-compatible shared library
+
+[dependencies]
+# Polars: Rust side dependency
+polars = "0.46"
+
+# PyO3: for Python bindings
+pyo3 = { version = "0.23.5", features = ["extension-module"] }
+
+# StatRS: for t-distribution (used in prob_mom)
+statrs = "0.18"
+
+pyo3-polars = "0.20"
