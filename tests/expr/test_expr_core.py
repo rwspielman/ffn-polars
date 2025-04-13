@@ -4,7 +4,7 @@ import ffn_polars as ffn
 from datetime import datetime, date, timedelta
 import pytest
 import math
-from ffn_polars.core import TRADING_DAYS_PER_YEAR 
+from ffn_polars.config import TRADING_DAYS_PER_YEAR 
 import numpy as np
 
 
@@ -573,4 +573,3 @@ def test_infer_nperiods_irregular_returns_none():
 
     result = df.select(pl.col("Date").ffn.infer_nperiods()).item()
     assert result is None
-

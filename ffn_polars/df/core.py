@@ -46,6 +46,3 @@ def resample_returns(
             raise TypeError(f"Unsupported return type from func: {type(result)}")
 
     return pl.DataFrame(results)
-
-
-core_df_funcs = {"resample_returns": resample_returns}

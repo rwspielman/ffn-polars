@@ -1,9 +1,9 @@
 import polars as pl
-from .expr.core import core_funcs
-from .df.core import core_df_funcs
+from .expr import expr_funcs
+from .df import df_funcs
 
-EXPR_MODULES = [core_funcs]
-DF_EXPR_MODULES = [core_df_funcs]
+EXPR_MODULES = [expr_funcs]
+DF_EXPR_MODULES = [df_funcs]
 
 
 @pl.api.register_expr_namespace("ffn")
@@ -22,7 +22,7 @@ class FFNNamespace:
     @staticmethod
     def extract_all_alias_suffixes() -> set[str]:
         suffixes = set()
-        for registry in [core_funcs]:  # add others like perf_funcs
+        for registry in EXPR_MODULES:  # add others like perf_funcs
             for fn in registry.values():
                 actual_fn = getattr(fn, "__wrapped__", fn)
                 suffix = getattr(actual_fn, "_alias_suffix", None)
