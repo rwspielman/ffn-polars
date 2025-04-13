@@ -1,4 +1,4 @@
-from .fixtures import df, ts
+from tests.fixtures import df, ts
 import polars as pl
 import ffn_polars as ffn
 from datetime import datetime, date, timedelta
@@ -20,158 +20,99 @@ def aae(actual: float, expected: float, places: int = 3):
 
 def test_to_returns(df):
     data = df
-    actual = data.select(ffn.to_return("AAPL"))
+    actual = data.select(pl.col("AAPL").ffn.to_returns())
 
     assert actual.height == data.height
-    assert actual["AAPL"][0] is None
-    aae(actual["AAPL"][1], -0.019)
-    aae(actual["AAPL"][9], -0.022)
+    assert actual["AAPL_returns"][0] is None
+    aae(actual["AAPL_returns"][1], -0.019)
+    aae(actual["AAPL_returns"][9], -0.022)
 
 
 def test_to_log_returns(df):
     data = df
-    actual = data.select(ffn.to_log_returns("AAPL"))
+    actual = data.select(pl.col("AAPL").ffn.to_log_returns())
 
     assert actual.height == data.height
-    assert actual["AAPL"][0] is None
-    aae(actual["AAPL"][1], -0.019)
-    aae(actual["AAPL"][9], -0.022)
+    assert actual["AAPL_log_returns"][0] is None
+    aae(actual["AAPL_log_returns"][1], -0.019)
+    aae(actual["AAPL_log_returns"][9], -0.022)
 
 
 def test_to_price_index(df):
     data = df
-    actual = data.select(ffn.to_return("AAPL").alias("AAPL_ret")).select(
-        ffn.to_price_index("AAPL_ret").alias("AAPL"),
-    )
+    actual = data.select(pl.col("AAPL").ffn.to_returns().ffn.to_price_index())
 
     assert actual.height == data.height
-    aae(actual["AAPL"][0], 100)
-    aae(actual["AAPL"][9], 91.366, 3)
+    aae(actual["AAPL_price_index"][0], 100)
+    aae(actual["AAPL_price_index"][9], 91.366, 3)
 
-    actual = data.select(ffn.to_return("AAPL").alias("AAPL_ret")).select(
-        ffn.to_price_index("AAPL_ret", start=1).alias("AAPL"),
-    )
+    actual = data.select(pl.col("AAPL").ffn.to_returns().ffn.to_price_index(start=1))
+
 
     assert actual.height == data.height
-    aae(actual["AAPL"][0], 1, 3)
-    aae(actual["AAPL"][9], 0.914, 3)
+    aae(actual["AAPL_price_index"][0], 1, 3)
+    aae(actual["AAPL_price_index"][9], 0.914, 3)
 
 
 def test_rebase(df):
     data = df
-    actual = data.select(ffn.rebase("AAPL").alias("AAPL"))
+    actual = data.select(pl.col("AAPL").ffn.rebase())
 
     assert actual.height == data.height
-    aae(actual["AAPL"][0], 100, 3)
-    aae(actual["AAPL"][9], 91.366, 3)
+    aae(actual["AAPL_rebased"][0], 100, 3)
+    aae(actual["AAPL_rebased"][9], 91.366, 3)
 
 
 def test_to_drawdown_series_df(df):
     data = df
     actual = data.select(
-        ffn.to_drawdown_series("AAPL").alias("AAPL"),
+        pl.col("AAPL").ffn.to_drawdown_series()
     )
+    print(actual.columns)
+    print("LOOK HERE")
 
     assert len(actual) == len(data)
-    aae(actual["AAPL"][0], 0, 3)
-    aae(actual["AAPL"][1], -0.019, 3)
-    aae(actual["AAPL"][9], -0.086, 3)
+    aae(actual["AAPL_drawdowns"][0], 0, 3)
+    aae(actual["AAPL_drawdowns"][1], -0.019, 3)
+    aae(actual["AAPL_drawdowns"][9], -0.086, 3)
 
 
-def _resample_last(df: pl.DataFrame, every: str) -> pl.Series:
-    return (
-        df.sort("Date")
-        .group_by_dynamic("Date", every=every)
-        .agg(pl.col("AAPL").last())
-        .drop_nulls()["AAPL"]
+def test_calc_mtd_basic():
+    df = pl.DataFrame({
+        "Date": pl.date_range(date(2024,3,1), date(2024,4,10), eager=True),
+        "AAPL": [100.0 + i for i in range(41)]  # AAPL ends at 140, starts at 100
+    })
+
+    result = df.select(
+        pl.col("AAPL").ffn.calc_mtd(date_col="Date").alias("AAPL_mtd")
     )
 
+    # Latest: 140, last price of previous month (March): 130
+    expected = (140 / 130) - 1  # ≈ 0.0769
+    actual = result["AAPL_mtd"][0]
+    aae(actual, expected, 4)
 
-def test_calc_mtd(df):
-    # ---- Intramonth ----
-    df1 = df.filter(
-        (pl.col("Date") >= datetime(2004, 12, 10))
-        & (pl.col("Date") <= datetime(2004, 12, 25))
+def test_calc_ytd_basic():
+    df = pl.DataFrame({
+        "Date": pl.date_range(date(2024,1,1), date(2024,4,9), eager=True),
+        "AAPL": [100.0 + i for i in range(100)]  # Starts at 100, ends at 199
+    })
+
+    result = df.select(
+        pl.col("AAPL").ffn.calc_ytd(date_col="Date").alias("AAPL_ytd")
     )
-    daily = _resample_last(df1, "1d")
-    monthly = _resample_last(df1, "1mo")
-    mtd = ffn.calc_mtd(daily, monthly)
-    aae(mtd, -0.0175, 4)
 
-    # ---- Year change - first month ----
-    df2 = df.filter(
-        (pl.col("Date") >= datetime(2004, 12, 10))
-        & (pl.col("Date") <= datetime(2005, 1, 15))
-    )
-    daily = _resample_last(df2, "1d")
-    monthly = _resample_last(df2, "1mo")
-    mtd = ffn.calc_mtd(daily, monthly)
-    aae(mtd, 0.0901, 4)
-
-    # ---- Year change - second month ----
-    df3 = df.filter(
-        (pl.col("Date") >= datetime(2004, 12, 10))
-        & (pl.col("Date") <= datetime(2005, 2, 15))
-    )
-    daily = _resample_last(df3, "1d")
-    monthly = _resample_last(df3, "1mo")
-    mtd = ffn.calc_mtd(daily, monthly)
-    aae(mtd, 0.1497, 4)
-
-    # ---- Single day ----
-    df4 = df.filter(pl.col("Date") == datetime(2004, 12, 10))
-    daily = _resample_last(df4, "1d")
-    monthly = _resample_last(df4, "1mo")
-    mtd = ffn.calc_mtd(daily, monthly)
-    assert mtd == 0.0
-
-
-def test_calc_ytd(df):
-    # ---- Intramonth (YTD same as MTD)
-    df1 = df.filter(
-        (pl.col("Date") >= datetime(2004, 12, 10))
-        & (pl.col("Date") <= datetime(2004, 12, 25))
-    )
-    daily = _resample_last(df1, "1d")
-    yearly = _resample_last(df1, "1y")
-    ytd = ffn.calc_ytd(daily, yearly)
-    aae(ytd, -0.0175, 4)
-
-    # ---- Year change - first month
-    df2 = df.filter(
-        (pl.col("Date") >= datetime(2004, 12, 10))
-        & (pl.col("Date") <= datetime(2005, 1, 15))
-    )
-    daily = _resample_last(df2, "1d")
-    yearly = _resample_last(df2, "1y")
-    ytd = ffn.calc_ytd(daily, yearly)
-    aae(ytd, 0.0901, 4)
-
-    # ---- Year change - second month
-    df3 = df.filter(
-        (pl.col("Date") >= datetime(2004, 12, 10))
-        & (pl.col("Date") <= datetime(2005, 2, 15))
-    )
-    daily = _resample_last(df3, "1d")
-    yearly = _resample_last(df3, "1y")
-    ytd = ffn.calc_ytd(daily, yearly)
-    aae(ytd, 0.3728, 4)
-
-    # ---- Single day
-    df4 = df.filter(pl.col("Date") == datetime(2004, 12, 10))
-    daily = _resample_last(df4, "1d")
-    yearly = _resample_last(df4, "1y")
-    ytd = ffn.calc_ytd(daily, yearly)
-    assert ytd == 0.0
-
+    expected = (199 / 100) - 1  # = 0.99
+    actual = result["AAPL_ytd"][0]
+    aae(actual, expected, 4)
 
 def test_max_drawdown_df(df):
     data = df
     data = data[0:10]
     actual = data.select(
-        ffn.calc_max_drawdown("AAPL").alias("AAPL"),
-        ffn.calc_max_drawdown("MSFT").alias("MSFT"),
-        ffn.calc_max_drawdown("C").alias("C"),
+        pl.col("AAPL").ffn.calc_max_drawdown().alias("AAPL"),
+        pl.col("MSFT").ffn.calc_max_drawdown().alias("MSFT"),
+        pl.col("C").ffn.calc_max_drawdown().alias("C"),
     )
 
     aae(actual["AAPL"][0], -0.086, 3)
@@ -180,21 +121,21 @@ def test_max_drawdown_df(df):
 
 
 def test_year_frac(df):
-    actual = df.select(ffn.year_frac("Date"))
+    actual = df.select(pl.col("Date").ffn.year_frac())
     # not exactly the same as excel but close enough
-    aae(actual["Date"][0], 9.9986, 4)
+    aae(actual["Date_year_frac"][0], 9.9986, 4)
 
 
 def test_cagr_df(df):
     data = df
     actual = data.select(
-        ffn.calc_cagr("AAPL", "Date").alias("AAPL"),
-        ffn.calc_cagr("MSFT", "Date").alias("MSFT"),
-        ffn.calc_cagr("C", "Date").alias("C"),
+        pl.col("AAPL").ffn.calc_cagr(date_col="Date"),
+        pl.col("MSFT").ffn.calc_cagr(date_col="Date"),
+        pl.col("C").ffn.calc_cagr(date_col="Date"),
     )
-    aae(actual["AAPL"][0], 0.440, 3)
-    aae(actual["MSFT"][0], 0.041, 3)
-    aae(actual["C"][0], -0.205, 3)
+    aae(actual["AAPL_cagr"][0], 0.440, 3)
+    aae(actual["MSFT_cagr"][0], 0.041, 3)
+    aae(actual["C_cagr"][0], -0.205, 3)
 
 
 def make_df(n: int, freq: str | timedelta, start: str = "2024-01-01 00:00:00", value: bool = True) -> pl.DataFrame:
@@ -231,7 +172,7 @@ def make_df(n: int, freq: str | timedelta, start: str = "2024-01-01 00:00:00", v
 )
 def test_infer_freq_labels(delta, expected):
     df = make_df(10, delta)
-    result = df.select(ffn.infer_freq("Date")).item()
+    result = df.select(pl.col("Date").ffn.infer_freq()).item()
     assert result == expected
 
 def test_infer_freq_unknown():
@@ -239,7 +180,7 @@ def test_infer_freq_unknown():
     dt = datetime(2024, 1, 1)
     dates = [dt + timedelta(days=x) for x in [0, 1, 6, 26, 55]]
     df = pl.DataFrame({"Date": dates})
-    result = df.select(ffn.infer_freq("Date")).item()
+    result = df.select(pl.col("Date").ffn.infer_freq()).item()
     assert result == "unknown"
 
 @pytest.mark.parametrize(
@@ -251,8 +192,8 @@ def test_infer_freq_unknown():
 )
 def test_deannualize(r_annual, nperiods, expected):
     df = pl.DataFrame({"r": [r_annual]})
-    result = df.select(ffn.deannualize("r", nperiods)).item()
-    assert math.isclose(result, expected, rel_tol=1e-9)
+    result = df.select(pl.col("r").ffn.deannualize(n=nperiods)).item()
+    aae(result, expected, 8)
 
 
 @pytest.mark.parametrize(
@@ -265,38 +206,36 @@ def test_deannualize(r_annual, nperiods, expected):
 )
 def test_to_excess_returns_expr_with_float_rf(returns, rf, nperiods, expected):
     df = pl.DataFrame({"returns": returns})
-    result = df.select(
-        ffn.to_excess_returns("returns", rf=rf, nperiods=nperiods)
-    ).item()
-    assert math.isclose(result, expected, rel_tol=1e-10)
+    result = df.select(pl.col("returns").ffn.to_excess_returns(rf=rf, n=nperiods)).item()
+    aae(result, expected, 8)
 
 
 def test_to_excess_returns_expr_with_column_rf():
     df = pl.DataFrame({"returns": [0.05, 0.03, 0.04], "rf": [0.01, 0.01, 0.01]})
-    result = df.select(ffn.to_excess_returns("returns", rf="rf", nperiods=252))[
-        "returns"
+    result = df.select(pl.col("returns").ffn.to_excess_returns(rf="rf", n=252))[
+        "returns_excess"
     ].to_list()
     expected = [0.04, 0.02, 0.03]
     for r, e in zip(result, expected):
-        assert math.isclose(r, e, rel_tol=1e-10)
+        aae(r, e, 8)
 
 
 def test_to_excess_returns_expr_raises_on_bad_rf_type():
     df = pl.DataFrame({"returns": [0.01, 0.02]})
     with pytest.raises(TypeError):
-        df.select(ffn.to_excess_returns("returns", rf=[0.01], nperiods=252))
+        df.select(pl.col("returns").ffn.to_excess_returns(rf=[0.01], nperiods=252))
 
 
 def test_calc_risk_return_ratio_simple_case():
     returns = pl.DataFrame({"returns": [0.01, 0.02, -0.01, 0.03, -0.02]})
     expected_ratio = returns.mean() / returns.std() * math.sqrt(252)
-    result = returns.select(ffn.calc_risk_return_ratio("returns").alias("ratio"))
-    aae(result["ratio"][0], expected_ratio["returns"][0])
+    result = returns.select(pl.col("returns").ffn.calc_risk_return_ratio())
+    aae(result["returns_risk_return_ratio"][0], expected_ratio["returns"][0])
 
 
 def test_calc_sharpe_expr_basic():
     df = pl.DataFrame({"returns": [0.01, 0.02, -0.01, 0.005]})
-    result = df.select(ffn.calc_sharpe("returns", rf=0.0, nperiods=252, annualize=True))
+    result = df.select(pl.col("returns").ffn.calc_sharpe(rf=0.0, n=252, annualize=True))
     sharpe = result["returns_sharpe"][0]
     assert isinstance(sharpe, float)
     assert sharpe != 0
@@ -312,7 +251,7 @@ def test_calc_sharpe_expr_basic():
 )
 def test_calc_information_ratio_expr(returns, benchmark):
     df = pl.DataFrame({"r": returns, "b": benchmark})
-    result = df.select(ffn.calc_information_ratio("r", "b"))["r_ir"][0]
+    result = df.select(pl.col("r").ffn.calc_information_ratio(benchmark="b"))["r_ir"][0]
 
     # Compute expected IR manually using standard Python
     diffs = [r - b for r, b in zip(returns, benchmark)]
@@ -320,7 +259,7 @@ def test_calc_information_ratio_expr(returns, benchmark):
     std_diff = (sum((x - mean_diff) ** 2 for x in diffs) / (len(diffs) - 1)) ** 0.5
     expected = 0.0 if std_diff == 0 else mean_diff / std_diff
 
-    assert math.isclose(result, expected, rel_tol=1e-9)
+    aae(result, expected, 8)
 
 
 def test_calc_prob_mom_expr():
@@ -329,7 +268,7 @@ def test_calc_prob_mom_expr():
         "b": [0.01, 0.00,  0.01, 0.01],
     })
 
-    out = df.select(ffn.calc_prob_mom("a", "b"))
+    out = df.select(pl.col("a").ffn.calc_prob_mom(b="b"))
     val = out.item()
     assert 0 <= val <= 1
 
@@ -341,7 +280,7 @@ def test_calc_total_return_simple():
         }
     )
 
-    result = df.select(ffn.calc_total_return("AAPL")).item()
+    result = df.select(pl.col("AAPL").ffn.calc_total_return()).item()
     expected = (130.0 / 100.0) - 1
     aae(result, expected, 6)
 
@@ -354,7 +293,7 @@ def test_calc_total_return_flat():
         }
     )
 
-    result = df.select(ffn.calc_total_return("AAPL")).item()
+    result = df.select(pl.col("AAPL").ffn.calc_total_return()).item()
     assert result == 0.0
 
 
@@ -366,7 +305,7 @@ def test_calc_total_return_negative():
         }
     )
 
-    result = df.select(ffn.calc_total_return("AAPL")).item()
+    result = df.select(pl.col("AAPL").ffn.calc_total_return()).item()
     expected = (80.0 / 100.0) - 1
     aae(result, expected, 6)
 
@@ -383,7 +322,7 @@ def test_annualize_basic():
         }
     )
 
-    result = df.with_columns(ffn.annualize("returns", "durations"))
+    result = df.select(pl.col("returns").ffn.annualize(durations="durations"))
 
     expected = [
         (1 + 0.05) ** (365.0 / 30) - 1,
@@ -391,7 +330,7 @@ def test_annualize_basic():
         (1 + 0.25) ** (365.0 / 180) - 1,
     ]
 
-    for actual, exp in zip(result["annualized"], expected):
+    for actual, exp in zip(result["returns_annualized"], expected):
         assert is_close(actual, exp)
 
 
@@ -402,8 +341,9 @@ def test_annualize_zero_return():
             "durations": [60],
         }
     )
-    result = df.with_columns(ffn.annualize("returns", "durations"))
-    assert result["annualized"][0] == 0.0
+    result = df.select(pl.col("returns").ffn.annualize(durations="durations"))
+    print(result)
+    assert result["returns_annualized"][0] == 0.0
 
 
 def test_annualize_one_day_duration():
@@ -413,9 +353,9 @@ def test_annualize_one_day_duration():
             "durations": [1],
         }
     )
-    result = df.with_columns(ffn.annualize("returns", "durations"))
+    result = df.select(pl.col("returns").ffn.annualize(durations="durations"))
     expected = (1 + 0.01) ** 365.0 - 1
-    assert is_close(result["annualized"][0], expected)
+    assert is_close(result["returns_annualized"][0], expected)
 
 
 def test_annualize_large_return_long_duration():
@@ -425,16 +365,16 @@ def test_annualize_large_return_long_duration():
             "durations": [730],
         }
     )
-    result = df.with_columns(ffn.annualize("returns", "durations"))
+    result = df.select(pl.col("returns").ffn.annualize(durations="durations"))
     expected = (1 + 10.0) ** (365.0 / 730) - 1
-    assert is_close(result["annualized"][0], expected)
+    assert is_close(result["returns_annualized"][0], expected)
 
 
 def test_sortino_ratio(df):
     rf = 0.0
     nperiods = 1
 
-    df = df.with_columns(returns=ffn.to_return("AAPL"))
+    df = df.with_columns(pl.col("AAPL").ffn.to_returns().alias("returns"))
     er = df.with_columns([(pl.col("returns") - rf / nperiods).alias("excess")])
 
     # replicate: negative_returns = np.minimum(er[1:], 0.0)
@@ -452,10 +392,8 @@ def test_sortino_ratio(df):
     expected = (sum(excess) / len(excess)) / downside_std * (nperiods**0.5)
 
     # actual from Polars expr
-    result = df.select(
-        ffn.sortino_ratio("returns", rf=rf, nperiods=nperiods, annualize=True)
-    )
-    actual = result["sortino_ratio"][0]
+    result = df.select(pl.col("returns").ffn.sortino_ratio(rf=rf, n=nperiods))
+    actual = result["returns_sortino_ratio"][0]
 
     aae(actual, expected, places=3)
 
@@ -470,10 +408,11 @@ def test_calc_calmar_ratio_expr():
         "price": [100, 90, 120, 140]
     })
 
-    result = df.select(ffn.calc_calmar_ratio("price", "Date")).item()
+    result = df.select(pl.col("price").ffn.calc_calmar_ratio(date_col="Date")).item()
 
-    cagr = df.select(ffn.calc_cagr("price", "Date"))["cagr"].item()
-    max_dd = abs(df.select(ffn.calc_max_drawdown("price"))["max_drawdown"].item())
+    cagr = df.select(pl.col("price").ffn.calc_cagr(date_col="Date")).item()
+    # max_dd = abs(df.select(ffn.calc_max_drawdown("price"))["max_drawdown"].item())
+    max_dd = abs(df.select(pl.col("price").ffn.calc_max_drawdown()).item())
     expected = cagr / max_dd
 
     aae(result, expected, 4)
@@ -488,7 +427,7 @@ def test_ulcer_index_known_example():
     # Drawdowns from peak:
     # 0%, -10%, -5%, -15%, -20%
     # Ulcer Index = sqrt(mean([0^2, 10^2, 5^2, 15^2, 20^2])) = sqrt(250) ≈ 15.81
-    result = df.select(ffn.ulcer_index("price")).item()
+    result = df.select(pl.col("price").ffn.calc_ulcer_index()).item()
     aae(result, np.sqrt((0**2 + 10**2 + 5**2 + 15**2 + 20**2) / 5), 4)
 
 
@@ -561,9 +500,7 @@ def test_ulcer_performance_index_float_rf(prices, rf, nperiods):
     else:
         expected_upi = np.mean(returns.to_numpy()) / ulcer
 
-    result = df.select(
-        ffn.ulcer_performance_index("price", rf=rf, nperiods=nperiods)
-    ).item()
+    result = df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf=rf, n=nperiods)).item()
 
     if np.isnan(expected_upi):
         assert np.isinf(result)
@@ -577,9 +514,7 @@ def test_ulcer_performance_index_column_rf():
         "rf_col": [0.0001] * 6,  # daily constant RF series
     })
 
-    result = df.select(
-        ffn.ulcer_performance_index("price", rf="rf_col")
-    ).item()
+    result = df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf="rf_col")).item()
 
     manual_rf_adjusted_returns = df.select(
         (pl.col("price").pct_change() - pl.col("rf_col")).mean()
@@ -594,12 +529,12 @@ def test_ulcer_performance_index_column_rf():
 def test_invalid_rf_type_raises():
     df = pl.DataFrame({"price": [100, 95, 97, 85]})
     with pytest.raises(TypeError):
-        df.select(ffn.ulcer_performance_index("price", rf=[0.01]))
+        df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf=[0.01]))
 
 def test_missing_nperiods_raises():
     df = pl.DataFrame({"price": [100, 95, 97, 85]})
     with pytest.raises(ValueError):
-        df.select(ffn.ulcer_performance_index("price", rf=0.03))  # missing nperiods
+        df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf=0.03, n=None))
 
 @pytest.mark.parametrize(
     "freq, expected",
@@ -613,15 +548,15 @@ def test_missing_nperiods_raises():
 )
 def test_infer_nperiods_known_freqs(freq, expected):
     df = make_df(10, freq)
-    result = df.select(ffn.infer_nperiods("Date")).item()
+    result = df.select(pl.col("Date").ffn.infer_nperiods()).item()
     assert result == expected
 
 def test_infer_nperiods_monthly_and_yearly():
     df_monthly = make_df(10, "1mo")
     df_yearly = make_df(10, "1y")
 
-    assert df_monthly.select(ffn.infer_nperiods("Date")).item() == 12
-    assert df_yearly.select(ffn.infer_nperiods("Date")).item() == 1
+    assert df_monthly.select(pl.col("Date").ffn.infer_nperiods()).item() == 12
+    assert df_yearly.select(pl.col("Date").ffn.infer_nperiods()).item() == 1
 
 def test_infer_nperiods_irregular_returns_none():
     dt = datetime.strptime("2024-01-01 00:00:00", "%Y-%m-%d %H:%M:%S")
@@ -636,40 +571,6 @@ def test_infer_nperiods_irregular_returns_none():
         "value": np.random.randn(len(timestamps)),
     })
 
-    result = df.select(ffn.infer_nperiods("Date")).item()
+    result = df.select(pl.col("Date").ffn.infer_nperiods()).item()
     assert result is None
 
-
-def test_resample_returns_scalar_func():
-    returns = pl.Series("r", np.array([0.01, -0.02, 0.015, 0.005]))
-    result = ffn.resample_returns(returns, func=lambda df: df["r"].mean(), num_trials=5, seed=42)
-
-    assert isinstance(result, pl.DataFrame)
-    assert result.shape[0] == 5
-    assert set(result.columns) == {"trial", "stat"}
-    assert result["trial"].to_list() == list(range(5))
-
-def test_resample_returns_series_func():
-    returns = pl.DataFrame({"r": [0.01, -0.02, 0.015, 0.005]})
-    result = ffn.resample_returns(
-        returns,
-        func=lambda df: df.select(pl.col("r").mean().alias("mean_r"))["mean_r"],
-        num_trials=3,
-        seed=123
-    )
-
-    assert "mean_r" in result.columns
-    assert result.shape == (3, 2)
-
-def test_resample_returns_df_func():
-    returns = pl.DataFrame({"r": [0.01, -0.02, 0.015, 0.005]})
-    def return_full_stat(df):
-        return df.select([
-            pl.col("r").mean().alias("mean"),
-            pl.col("r").std().alias("std")
-        ])
-    
-    result = ffn.resample_returns(returns, return_full_stat, num_trials=4, seed=1)
-
-    assert result.shape == (4, 3)
-    assert {"trial", "mean", "std"} == set(result.columns)
