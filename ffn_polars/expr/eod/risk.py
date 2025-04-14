@@ -6,8 +6,10 @@ import math
 from ffn_polars.utils.guardrails import guard_expr
 from ffn_polars.utils.decorators import auto_alias
 from ffn_polars.utils.typing import ExprOrStr
+from ffn_polars.registry import register
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("ulcer_index")
 def ulcer_index(self: ExprOrStr) -> pl.Expr:
@@ -26,6 +28,7 @@ def ulcer_index(self: ExprOrStr) -> pl.Expr:
     return squared_drawdowns.mean().sqrt()
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("ulcer_performance_index")
 def ulcer_performance_index(
@@ -38,9 +41,9 @@ def ulcer_performance_index(
     Must be used inside `.select()` or `.with_columns()`
 
     Args:
-        price_col: column with prices
+        self: column with prices
         rf: either a float (annualized) or a column name containing RF series
-        nperiods: required if rf is float and nonzero
+        n: required if rf is float and nonzero
     """
     if isinstance(rf, float):
         if rf != 0 and n is None:
@@ -57,9 +60,10 @@ def ulcer_performance_index(
     return excess_returns.mean() / self.ffn.ulcer_index()
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("drawdowns")
-def to_drawdown_series(self):
+def to_drawdown_series(self: ExprOrStr) -> pl.Expr:
     """
     Calculates the `drawdown <https://www.investopedia.com/terms/d/drawdown.asp>`_ series.
 
@@ -74,7 +78,7 @@ def to_drawdown_series(self):
     Method ignores all gaps of NaN's in the price series.
 
     Args:
-        * prices (Series or DataFrame): Series of prices.
+        self: prices
 
     """
     prices_clean = self.forward_fill()
@@ -82,9 +86,10 @@ def to_drawdown_series(self):
     return prices_clean / hwm - 1
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("max_drawdown")
-def calc_max_drawdown(self):
+def calc_max_drawdown(self: ExprOrStr) -> pl.Expr:
     """
     Calculates the max drawdown of a price series. If you want the
     actual drawdown series, please use to_drawdown_series.

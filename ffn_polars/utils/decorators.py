@@ -13,7 +13,7 @@ def auto_alias(suffix: str):
 
             try:
                 base_name = self.meta.output_name()
-                from ffn_polars.ffn import FFNNamespace
+                from ffn_polars import FFNNamespace
 
                 known_suffixes = FFNNamespace.extract_all_alias_suffixes()
 
@@ -32,7 +32,7 @@ def auto_alias(suffix: str):
                     alias_name = f"{base_name}_{suffix}"
 
                 return result.alias(alias_name)
-            except Exception:
+            except Exception as e:
                 return result
 
         wrapper._alias_suffix = suffix

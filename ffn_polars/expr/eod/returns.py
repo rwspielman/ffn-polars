@@ -5,8 +5,10 @@ import math
 from ffn_polars.utils.guardrails import guard_expr
 from ffn_polars.utils.decorators import auto_alias
 from ffn_polars.utils.typing import ExprOrStr
+from ffn_polars.registry import register
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("returns")
 def to_returns(self: ExprOrStr) -> pl.Expr:
@@ -15,13 +17,11 @@ def to_returns(self: ExprOrStr) -> pl.Expr:
 
     Formula is: (t1 / t0) - 1
 
-    Args:
-        * prices: Expects a price series
-
     """
     return self / self.shift(1) - 1
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("log_returns")
 def to_log_returns(self: ExprOrStr) -> pl.Expr:
@@ -30,13 +30,11 @@ def to_log_returns(self: ExprOrStr) -> pl.Expr:
 
     Formula is: ln(p1/p0)
 
-    Args:
-        * prices: Expects a price series
-
     """
     return (self / self.shift(1)).log()
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("date_col", expected_dtype=pl.Datetime)
 @auto_alias("mtd")
@@ -65,6 +63,7 @@ def calc_mtd(self: pl.Expr, date_col: ExprOrStr = "Date") -> pl.Expr:
     )
 
 
+@register(namespace="eod")
 @auto_alias("ytd")
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("date_col", expected_dtype=pl.Datetime)
@@ -90,6 +89,7 @@ def calc_ytd(self: pl.Expr, date_col: ExprOrStr = "Date") -> pl.Expr:
     return (current_year_prices.last() / current_year_prices.first()) - 1
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @guard_expr("date_col", expected_dtype=pl.Datetime)
 @auto_alias("cagr")
@@ -97,8 +97,6 @@ def calc_cagr(self: ExprOrStr, date_col: ExprOrStr) -> pl.Expr:
     """
     Calculates the `CAGR (compound annual growth rate) <https://www.investopedia.com/terms/c/cagr.asp>`_ for a given price series.
 
-    Args:
-        * prices (pandas.Series): A Series of prices.
     Returns:
         * float -- cagr.
 
@@ -106,16 +104,13 @@ def calc_cagr(self: ExprOrStr, date_col: ExprOrStr) -> pl.Expr:
     return (self.last() / self.first()) ** (1 / date_col.ffn.year_frac()) - 1
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("excess")
 def to_excess_returns(self: ExprOrStr, rf: Union[float, str], n: int) -> pl.Expr:
     """
     Returns a Polars expression that computes excess returns.
 
-    Args:
-        returns_col (str): Column with actual returns
-        rf (float | str): Either an annualized float or column name with risk-free returns
-        nperiods (int): Number of periods per year (used for deannualization if rf is a float)
     """
     if isinstance(rf, float):
         if rf == 0:
@@ -128,15 +123,12 @@ def to_excess_returns(self: ExprOrStr, rf: Union[float, str], n: int) -> pl.Expr
         raise TypeError("rf must be either a float or a column name string")
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64, required_substring="returns")
 @auto_alias("price_index")
 def to_price_index(self, start=100):
     """
     Returns a price index given a series of returns.
-
-    Args:
-        * returns: Expects a return series
-        * start (number): Starting level
 
     Assumes arithmetic returns.
 
@@ -145,19 +137,19 @@ def to_price_index(self, start=100):
     return (self.fill_null(0.0) + 1).cum_prod() * start
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("rebased")
 def rebase(self, value=100):
     """
     Rebase a price series to a given value.
-    Args:
-        * prices: Expects a price series
-        * value (number): Value to rebase to
+
     Formula is: (p / p0) * value
     """
     return self / self.first() * value
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("total_return")
 def calc_total_return(self: ExprOrStr) -> pl.Expr:

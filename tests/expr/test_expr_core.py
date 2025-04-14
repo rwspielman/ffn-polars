@@ -6,16 +6,7 @@ import pytest
 import math
 from ffn_polars.config import TRADING_DAYS_PER_YEAR 
 import numpy as np
-
-
-def aae(actual: float, expected: float, places: int = 3):
-    """Assert that two floats are equal up to a specified number of decimal places."""
-    rounded_actual = round(actual, places)
-    rounded_expected = round(expected, places)
-    assert rounded_actual == rounded_expected, (
-        f"Assertion failed: {rounded_actual} != {rounded_expected} "
-        f"(rounded to {places} places)"
-    )
+from tests.utils import aae
 
 
 def test_to_returns(df):
@@ -68,8 +59,6 @@ def test_to_drawdown_series_df(df):
     actual = data.select(
         pl.col("AAPL").ffn.to_drawdown_series()
     )
-    print(actual.columns)
-    print("LOOK HERE")
 
     assert len(actual) == len(data)
     aae(actual["AAPL_drawdowns"][0], 0, 3)
@@ -342,7 +331,6 @@ def test_annualize_zero_return():
         }
     )
     result = df.select(pl.col("returns").ffn.annualize(durations="durations"))
-    print(result)
     assert result["returns_annualized"][0] == 0.0
 
 
@@ -427,7 +415,7 @@ def test_ulcer_index_known_example():
     # Drawdowns from peak:
     # 0%, -10%, -5%, -15%, -20%
     # Ulcer Index = sqrt(mean([0^2, 10^2, 5^2, 15^2, 20^2])) = sqrt(250) ≈ 15.81
-    result = df.select(pl.col("price").ffn.calc_ulcer_index()).item()
+    result = df.select(pl.col("price").ffn.ulcer_index()).item()
     aae(result, np.sqrt((0**2 + 10**2 + 5**2 + 15**2 + 20**2) / 5), 4)
 
 
@@ -500,7 +488,7 @@ def test_ulcer_performance_index_float_rf(prices, rf, nperiods):
     else:
         expected_upi = np.mean(returns.to_numpy()) / ulcer
 
-    result = df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf=rf, n=nperiods)).item()
+    result = df.select(pl.col("price").ffn.ulcer_performance_index(rf=rf, n=nperiods)).item()
 
     if np.isnan(expected_upi):
         assert np.isinf(result)
@@ -514,7 +502,7 @@ def test_ulcer_performance_index_column_rf():
         "rf_col": [0.0001] * 6,  # daily constant RF series
     })
 
-    result = df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf="rf_col")).item()
+    result = df.select(pl.col("price").ffn.ulcer_performance_index(rf="rf_col")).item()
 
     manual_rf_adjusted_returns = df.select(
         (pl.col("price").pct_change() - pl.col("rf_col")).mean()
@@ -529,12 +517,12 @@ def test_ulcer_performance_index_column_rf():
 def test_invalid_rf_type_raises():
     df = pl.DataFrame({"price": [100, 95, 97, 85]})
     with pytest.raises(TypeError):
-        df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf=[0.01]))
+        df.select(pl.col("price").ffn.ulcer_performance_index(rf=[0.01]))
 
 def test_missing_nperiods_raises():
     df = pl.DataFrame({"price": [100, 95, 97, 85]})
     with pytest.raises(ValueError):
-        df.select(pl.col("price").ffn.calc_ulcer_performance_index(rf=0.03, n=None))
+        df.select(pl.col("price").ffn.ulcer_performance_index(rf=0.03, n=None))
 
 @pytest.mark.parametrize(
     "freq, expected",

@@ -6,6 +6,7 @@ import math
 from ffn_polars.utils.guardrails import guard_expr
 from ffn_polars.utils.decorators import auto_alias
 from ffn_polars.utils.typing import ExprOrStr
+from ffn_polars.registry import register
 
 try:
     from ffn_polars import _rust
@@ -16,6 +17,7 @@ except ImportError:
     _HAS_RUST = False
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("sortino_ratio")
 def sortino_ratio(
@@ -41,6 +43,7 @@ def sortino_ratio(
     return sortino
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("calmar_ratio")
 def calc_calmar_ratio(self: ExprOrStr, date_col: str) -> pl.Expr:
@@ -48,8 +51,8 @@ def calc_calmar_ratio(self: ExprOrStr, date_col: str) -> pl.Expr:
     Returns a Polars expression to compute the Calmar ratio: CAGR / |Max Drawdown|
 
     Args:
-        prices_col (str): Column name of price series
-        date_col (str): Column name of date series
+        self: Column name of price series
+        date_col: Column name of date series
 
     Returns:
         pl.Expr: Calmar ratio expression
@@ -60,6 +63,7 @@ def calc_calmar_ratio(self: ExprOrStr, date_col: str) -> pl.Expr:
     return cagr_expr / max_dd_expr
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("sharpe")
 def calc_sharpe(
@@ -82,6 +86,7 @@ def calc_sharpe(
     return sharpe_expr
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("risk_return_ratio")
 def calc_risk_return_ratio(self) -> pl.Expr:
@@ -92,6 +97,7 @@ def calc_risk_return_ratio(self) -> pl.Expr:
     return calc_sharpe(self)
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("benchmark", expected_dtype=pl.Float64)
 @auto_alias("ir")
@@ -100,14 +106,15 @@ def calc_information_ratio(self: ExprOrStr, benchmark: ExprOrStr) -> pl.Expr:
     Returns a Polars expression that computes the Information Ratio.
 
     Args:
-        returns_col: name of the column with asset returns
-        benchmark_col: name of the column with benchmark returns
+        self: name of the column with asset returns
+        benchmark: name of the column with benchmark returns
     """
     diff = self - benchmark
 
     return (diff.mean() / diff.std(ddof=1)).fill_nan(0.0).fill_null(0.0)
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("b", expected_dtype=pl.Float64)
 @auto_alias("prob_mom")

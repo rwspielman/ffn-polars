@@ -7,8 +7,10 @@ from ffn_polars.utils.guardrails import guard_expr
 from ffn_polars.utils.decorators import auto_alias
 from ffn_polars.utils.typing import ExprOrStr
 from ffn_polars.config import TRADING_DAYS_PER_YEAR
+from ffn_polars.registry import register
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("deannualized")
 def deannualize(self: ExprOrStr, n: int) -> pl.Expr:
@@ -16,12 +18,13 @@ def deannualize(self: ExprOrStr, n: int) -> pl.Expr:
     Returns a Polars expression that converts annualized returns to periodic returns.
 
     Args:
-        col (str): Name of the column containing annualized returns
-        nperiods (int): Number of periods per year (e.g., 252 for daily)
+        self: column containing annualized returns
+        n: Number of periods per year (e.g., 252 for daily)
     """
     return (self + 1.0) ** (1.0 / n) - 1.0
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("durations", expected_dtype=pl.Float64)
 @auto_alias("annualized")
@@ -32,9 +35,9 @@ def annualize(
     Returns a Polars expression to annualize returns given durations.
 
     Args:
-        returns_col (str): Name of the column with returns (e.g., 0.05 = 5%).
-        durations_col (str): Name of the column with durations (e.g., days held).
-        one_year (float): Number of periods in a year (default 365.0 for days).
+        self: Name of the column with returns (e.g., 0.05 = 5%).
+        durations: Name of the column with durations (e.g., days held).
+        one_year: Number of periods in a year (default 365.0 for days).
 
     Returns:
         pl.Expr: Expression computing annualized return.
@@ -42,6 +45,7 @@ def annualize(
     return (1.0 + self) ** (one_year / durations) - 1.0
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @auto_alias("nperiods")
 def infer_nperiods(self: ExprOrStr, annualization_factor: int | None = None) -> pl.Expr:
@@ -93,6 +97,7 @@ def _infer_from_deltas(series: pl.Series, af: int) -> pl.Series:
         return pl.Series([None])
 
 
+@register(namespace="eod")
 @guard_expr("date_col", expected_dtype=pl.Datetime)
 @auto_alias("inferred_freq")
 def infer_freq(self: ExprOrStr) -> pl.Expr:
@@ -150,6 +155,7 @@ def _map_mode_days_with_tolerance(batch: pl.Series) -> pl.Series:
         return pl.Series(["unknown"])
 
 
+@register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @auto_alias("year_frac")
 def year_frac(self) -> pl.Expr:

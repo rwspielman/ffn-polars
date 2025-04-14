@@ -6,8 +6,10 @@ import math
 from ffn_polars.utils.guardrails import guard_expr
 from ffn_polars.utils.decorators import auto_alias
 from ffn_polars.utils.typing import ExprOrStr
+from ffn_polars.registry import register
 
 
+@register(kind="df")
 def resample_returns(
     self,
     func: Callable[[pl.DataFrame], Union[float, int, pl.Series, pl.DataFrame]],

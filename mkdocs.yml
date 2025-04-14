@@ -1,0 +1,37 @@
+site_name: ffn-polars
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+    - content.code.copy
+    - search.highlight
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["ffn_polars"]
+          options:
+            show_root_heading: false
+            heading_level: 4
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Usage:
+      - Column Expressions: usage/expressions.md
+      - DataFrame API: usage/dataframe.md
+      - Examples: usage/examples.md
+  - Examples: usage/examples.md
+  - API Reference:
+      - Expressions: api/expr.md
+      - DataFrame Functions: api/df.md
