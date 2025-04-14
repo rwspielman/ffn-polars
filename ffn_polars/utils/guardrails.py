@@ -1,9 +1,11 @@
-import polars as pl
 import warnings
+from enum import Enum, auto
 from functools import wraps
 from typing import Any
-from enum import Enum, auto
-from .typing import ExprOrStr, resolve_expr
+
+import polars as pl
+
+from .typing import resolve_expr
 
 
 # --- Mode config ---

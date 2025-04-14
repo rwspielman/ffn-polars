@@ -1,17 +1,17 @@
+from typing import Callable, Union
+
 import polars as pl
-import numpy as np
-from typing import Union, Callable
-import math
-from ffn_polars.utils.guardrails import guard_expr
-from ffn_polars.utils.decorators import auto_alias
-from ffn_polars.utils.typing import ExprOrStr
+from polars._typing import IntoExpr
+
 from ffn_polars.registry import register
+from ffn_polars.utils.decorators import auto_alias
+from ffn_polars.utils.guardrails import guard_expr
 
 
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("returns")
-def to_returns(self: ExprOrStr) -> pl.Expr:
+def to_returns(self) -> pl.Expr:
     """
     Calculates the simple arithmetic returns of a price series.
 
@@ -24,7 +24,7 @@ def to_returns(self: ExprOrStr) -> pl.Expr:
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("log_returns")
-def to_log_returns(self: ExprOrStr) -> pl.Expr:
+def to_log_returns(self) -> pl.Expr:
     """
     Calculates the log returns of a price series.
 
@@ -38,7 +38,7 @@ def to_log_returns(self: ExprOrStr) -> pl.Expr:
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("date_col", expected_dtype=pl.Datetime)
 @auto_alias("mtd")
-def calc_mtd(self: pl.Expr, date_col: ExprOrStr = "Date") -> pl.Expr:
+def calc_mtd(self, date_col: IntoExpr = "Date") -> pl.Expr:
     """
     Calculate Month-To-Date return using daily prices only.
 
@@ -67,7 +67,7 @@ def calc_mtd(self: pl.Expr, date_col: ExprOrStr = "Date") -> pl.Expr:
 @auto_alias("ytd")
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("date_col", expected_dtype=pl.Datetime)
-def calc_ytd(self: pl.Expr, date_col: ExprOrStr = "Date") -> pl.Expr:
+def calc_ytd(self, date_col: IntoExpr = "Date") -> pl.Expr:
     """
     Calculate Year-To-Date (YTD) return using daily prices.
 
@@ -93,7 +93,7 @@ def calc_ytd(self: pl.Expr, date_col: ExprOrStr = "Date") -> pl.Expr:
 @guard_expr("self", expected_dtype=pl.Datetime)
 @guard_expr("date_col", expected_dtype=pl.Datetime)
 @auto_alias("cagr")
-def calc_cagr(self: ExprOrStr, date_col: ExprOrStr) -> pl.Expr:
+def calc_cagr(self, date_col: IntoExpr) -> pl.Expr:
     """
     Calculates the `CAGR (compound annual growth rate) <https://www.investopedia.com/terms/c/cagr.asp>`_ for a given price series.
 
@@ -107,7 +107,7 @@ def calc_cagr(self: ExprOrStr, date_col: ExprOrStr) -> pl.Expr:
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("excess")
-def to_excess_returns(self: ExprOrStr, rf: Union[float, str], n: int) -> pl.Expr:
+def to_excess_returns(self, rf: Union[float, str], n: int) -> pl.Expr:
     """
     Returns a Polars expression that computes excess returns.
 
@@ -152,7 +152,7 @@ def rebase(self, value=100):
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("total_return")
-def calc_total_return(self: ExprOrStr) -> pl.Expr:
+def calc_total_return(self) -> pl.Expr:
     """
     Calculates the total return of a series.
 

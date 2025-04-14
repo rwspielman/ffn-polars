@@ -1,11 +1,13 @@
-from tests.fixtures import df, ts
-import polars as pl
-import ffn_polars as ffn
-from datetime import datetime, date, timedelta
-import pytest
 import math
-from ffn_polars.config import TRADING_DAYS_PER_YEAR 
+from datetime import date, datetime, timedelta
+
 import numpy as np
+import polars as pl
+import pytest
+
+import ffn_polars as ffn
+from ffn_polars.config import TRADING_DAYS_PER_YEAR
+from tests.fixtures import df, ts
 from tests.utils import aae
 
 

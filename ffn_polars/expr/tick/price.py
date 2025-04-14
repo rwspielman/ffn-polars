@@ -1,13 +1,14 @@
 import polars as pl
-from ffn_polars.utils import auto_alias, guard_expr, ExprOrStr
-from ffn_polars.expr.tick.utils import SCALE
+from polars._typing import IntoExpr
+
 from ffn_polars.registry import register
+from ffn_polars.utils import auto_alias, guard_expr
 
 
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("micro_returns")
-def calc_micro_returns(self: ExprOrStr) -> pl.Expr:
+def calc_micro_returns(self) -> pl.Expr:
     """
     Calculates log returns at tick level:
         log(p_t) - log(p_{t-1})
@@ -21,7 +22,7 @@ def calc_micro_returns(self: ExprOrStr) -> pl.Expr:
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("price_volatility_ratio")
-def calc_price_volatility_ratio(self: ExprOrStr) -> pl.Expr:
+def calc_price_volatility_ratio(self) -> pl.Expr:
     """
     Computes the coefficient of variation:
         std(price) / mean(price)
@@ -36,7 +37,7 @@ def calc_price_volatility_ratio(self: ExprOrStr) -> pl.Expr:
 @guard_expr("price", expected_dtype=pl.Float64)
 @guard_expr("volume", expected_dtype=pl.Float64)
 @auto_alias("price_impact")
-def calc_price_impact(self: ExprOrStr, volume: ExprOrStr) -> pl.Expr:
+def calc_price_impact(self, volume: IntoExpr) -> pl.Expr:
     """
     Calculates absolute price impact:
         (last price - first price) / sum(volume)

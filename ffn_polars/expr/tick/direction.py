@@ -1,13 +1,14 @@
 import polars as pl
-from ffn_polars.utils import auto_alias, guard_expr, ExprOrStr
-from ffn_polars.expr.tick.utils import SCALE
+from polars._typing import IntoExpr
+
 from ffn_polars.registry import register
+from ffn_polars.utils import auto_alias, guard_expr
 
 
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("direction")
-def tick_rule(self: ExprOrStr) -> pl.Expr:
+def tick_rule(self) -> pl.Expr:
     """
     Infers trade direction using the tick rule:
         +1 if price > prev_price
@@ -26,7 +27,7 @@ def tick_rule(self: ExprOrStr) -> pl.Expr:
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @guard_expr("price", expected_dtype=pl.Float64)
-def apply_tick_rule_to_volume(self: ExprOrStr, price: ExprOrStr) -> pl.Expr:
+def apply_tick_rule_to_volume(self, price: IntoExpr) -> pl.Expr:
     """
     Applies the tick rule to volume data.
     Args:
@@ -41,7 +42,7 @@ def apply_tick_rule_to_volume(self: ExprOrStr, price: ExprOrStr) -> pl.Expr:
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("tick_imbalance")
-def calc_tick_imbalance(self: ExprOrStr) -> pl.Expr:
+def calc_tick_imbalance(self) -> pl.Expr:
     """
     Calculates tick imbalance using signed volume.
 

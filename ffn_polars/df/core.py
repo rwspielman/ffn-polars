@@ -1,11 +1,8 @@
-import polars as pl
+from typing import Callable, Union
+
 import numpy as np
-from datetime import date, datetime
-from typing import Union, Callable
-import math
-from ffn_polars.utils.guardrails import guard_expr
-from ffn_polars.utils.decorators import auto_alias
-from ffn_polars.utils.typing import ExprOrStr
+import polars as pl
+
 from ffn_polars.registry import register
 
 

@@ -1,5 +1,6 @@
-from pytest import fixture
 import polars as pl
+from pytest import fixture
+
 import ffn_polars
 
 

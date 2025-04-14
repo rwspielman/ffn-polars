@@ -1,13 +1,13 @@
 import polars as pl
-from ffn_polars.utils import auto_alias, guard_expr, ExprOrStr
-from ffn_polars.expr.tick.utils import SCALE
+
 from ffn_polars.registry import register
+from ffn_polars.utils import auto_alias, guard_expr
 
 
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("realized_volatility")
-def calc_realized_volatility(self: ExprOrStr) -> pl.Expr:
+def calc_realized_volatility(self) -> pl.Expr:
     """
     Calculates realized volatility (non-annualized) from a price series.
 

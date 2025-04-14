@@ -1,12 +1,12 @@
-import polars as pl
-import numpy as np
-from datetime import date, datetime
-from typing import Union, Callable
 import math
-from ffn_polars.utils.guardrails import guard_expr
-from ffn_polars.utils.decorators import auto_alias
-from ffn_polars.utils.typing import ExprOrStr
+from typing import Callable, Union
+
+import polars as pl
+from polars._typing import IntoExpr
+
 from ffn_polars.registry import register
+from ffn_polars.utils.decorators import auto_alias
+from ffn_polars.utils.guardrails import guard_expr
 
 try:
     from ffn_polars import _rust
@@ -21,7 +21,7 @@ except ImportError:
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("sortino_ratio")
 def sortino_ratio(
-    self: ExprOrStr, rf: float = 0.0, n: int = 252, annualize: bool = True
+    self, rf: float = 0.0, n: int = 252, annualize: bool = True
 ) -> pl.Expr:
     rf_periodic = rf / n
     excess = self - rf_periodic
@@ -46,7 +46,7 @@ def sortino_ratio(
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("calmar_ratio")
-def calc_calmar_ratio(self: ExprOrStr, date_col: str) -> pl.Expr:
+def calc_calmar_ratio(self, date_col: str) -> pl.Expr:
     """
     Returns a Polars expression to compute the Calmar ratio: CAGR / |Max Drawdown|
 
@@ -101,7 +101,7 @@ def calc_risk_return_ratio(self) -> pl.Expr:
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("benchmark", expected_dtype=pl.Float64)
 @auto_alias("ir")
-def calc_information_ratio(self: ExprOrStr, benchmark: ExprOrStr) -> pl.Expr:
+def calc_information_ratio(self, benchmark: IntoExpr) -> pl.Expr:
     """
     Returns a Polars expression that computes the Information Ratio.
 
@@ -118,7 +118,7 @@ def calc_information_ratio(self: ExprOrStr, benchmark: ExprOrStr) -> pl.Expr:
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("b", expected_dtype=pl.Float64)
 @auto_alias("prob_mom")
-def calc_prob_mom(self: ExprOrStr, b: ExprOrStr) -> pl.Expr:
+def calc_prob_mom(self, b: IntoExpr) -> pl.Expr:
     """
     Polars expression that computes probabilistic momentum between two return columns.
     If Rust plugin is available, uses it. Otherwise, falls back to a Polars map_batches version.

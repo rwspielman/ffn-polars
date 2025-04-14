@@ -1,18 +1,16 @@
+from typing import Callable, Union
+
 import polars as pl
-import numpy as np
-from datetime import date, datetime
-from typing import Union, Callable
-import math
-from ffn_polars.utils.guardrails import guard_expr
-from ffn_polars.utils.decorators import auto_alias
-from ffn_polars.utils.typing import ExprOrStr
+
 from ffn_polars.registry import register
+from ffn_polars.utils.decorators import auto_alias
+from ffn_polars.utils.guardrails import guard_expr
 
 
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("ulcer_index")
-def ulcer_index(self: ExprOrStr) -> pl.Expr:
+def ulcer_index(self) -> pl.Expr:
     """
     Returns a Polars expression to compute the Ulcer Index from a price series.
 
@@ -32,7 +30,7 @@ def ulcer_index(self: ExprOrStr) -> pl.Expr:
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("ulcer_performance_index")
 def ulcer_performance_index(
-    self: ExprOrStr, rf: Union[float, str] = 0.0, n: int = None
+    self, rf: Union[float, str] = 0.0, n: int = None
 ) -> pl.Expr:
     """
     Returns a Polars expression to compute Ulcer Performance Index (UPI).
@@ -63,7 +61,7 @@ def ulcer_performance_index(
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("drawdowns")
-def to_drawdown_series(self: ExprOrStr) -> pl.Expr:
+def to_drawdown_series(self) -> pl.Expr:
     """
     Calculates the `drawdown <https://www.investopedia.com/terms/d/drawdown.asp>`_ series.
 
@@ -89,7 +87,7 @@ def to_drawdown_series(self: ExprOrStr) -> pl.Expr:
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("max_drawdown")
-def calc_max_drawdown(self: ExprOrStr) -> pl.Expr:
+def calc_max_drawdown(self) -> pl.Expr:
     """
     Calculates the max drawdown of a price series. If you want the
     actual drawdown series, please use to_drawdown_series.
