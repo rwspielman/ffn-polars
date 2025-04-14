@@ -62,3 +62,9 @@ MIT. Originally inspired by [`ffn`](https://github.com/pmorissette/ffn) by Pierr
 - Idle time
 - Trade Clustering
 - Anomaly Detection
+
+#### Books to pull from
+
+- "Advanced Portfolio Management" by Giuseppe A. Paleologo
+- "Handbook of Price Impact Modeling" by Kevin T Webster
+- "Advances in Financial Machine Learning" by Marcos Lopez de Prado
