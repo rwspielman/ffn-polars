@@ -1,9 +1,11 @@
-import pytest
-import polars as pl
-from datetime import datetime, date, timedelta
-from tests.utils import aae
-from math import log, sqrt
 import statistics
+from datetime import date, datetime, timedelta
+from math import log, sqrt
+
+import polars as pl
+import pytest
+
+from tests.utils import aae
 
 
 @pytest.mark.parametrize(

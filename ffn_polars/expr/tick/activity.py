@@ -1,13 +1,14 @@
 import polars as pl
-from ffn_polars.utils import auto_alias, guard_expr, ExprOrStr
+
 from ffn_polars.expr.tick.utils import SCALE
 from ffn_polars.registry import register
+from ffn_polars.utils import auto_alias, guard_expr
 
 
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @auto_alias("trade_rate")
-def calc_trade_rate(self: ExprOrStr, per: str = "ms") -> pl.Expr:
+def calc_trade_rate(self, per: str = "ms") -> pl.Expr:
     """
     Calculates trade rate as number of trades per second.
 
@@ -31,7 +32,7 @@ def calc_trade_rate(self: ExprOrStr, per: str = "ms") -> pl.Expr:
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @auto_alias("inter_trade_time")
-def calc_inter_trade_time(self: ExprOrStr, per: str = "s") -> pl.Expr:
+def calc_inter_trade_time(self, per: str = "s") -> pl.Expr:
     """
     Calculates the average time between consecutive trades.
 
@@ -57,7 +58,7 @@ def calc_inter_trade_time(self: ExprOrStr, per: str = "s") -> pl.Expr:
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @auto_alias("burstiness")
-def calc_burstiness(self: ExprOrStr, per: str = "s") -> pl.Expr:
+def calc_burstiness(self, per: str = "s") -> pl.Expr:
     """
     Calculates burstiness as std(inter-trade time) / mean(inter-trade time).
 

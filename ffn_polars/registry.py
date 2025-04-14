@@ -1,6 +1,6 @@
-from collections.abc import Iterable
 import importlib
 import pkgutil
+from collections.abc import Iterable
 
 FFN_REGISTRY = {}
 FFN_DF_REGISTRY = {}
@@ -42,7 +42,7 @@ def import_all_modules_in(*packages):
 
 
 def import_all_expr_modules():
-    import ffn_polars.expr
     import ffn_polars.df
+    import ffn_polars.expr
 
     import_all_modules_in(ffn_polars.expr, ffn_polars.df)

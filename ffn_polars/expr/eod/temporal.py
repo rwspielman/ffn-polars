@@ -1,19 +1,16 @@
 import polars as pl
-import numpy as np
-from datetime import date, datetime
-from typing import Union, Callable
-import math
-from ffn_polars.utils.guardrails import guard_expr
-from ffn_polars.utils.decorators import auto_alias
-from ffn_polars.utils.typing import ExprOrStr
+from polars._typing import IntoExpr
+
 from ffn_polars.config import TRADING_DAYS_PER_YEAR
 from ffn_polars.registry import register
+from ffn_polars.utils.decorators import auto_alias
+from ffn_polars.utils.guardrails import guard_expr
 
 
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("deannualized")
-def deannualize(self: ExprOrStr, n: int) -> pl.Expr:
+def deannualize(self, n: int) -> pl.Expr:
     """
     Returns a Polars expression that converts annualized returns to periodic returns.
 
@@ -28,9 +25,7 @@ def deannualize(self: ExprOrStr, n: int) -> pl.Expr:
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("durations", expected_dtype=pl.Float64)
 @auto_alias("annualized")
-def annualize(
-    self: ExprOrStr, durations: ExprOrStr, one_year: float = 365.0
-) -> pl.Expr:
+def annualize(self, durations: IntoExpr, one_year: float = 365.0) -> pl.Expr:
     """
     Returns a Polars expression to annualize returns given durations.
 
@@ -48,7 +43,7 @@ def annualize(
 @register(namespace="eod")
 @guard_expr("self", expected_dtype=pl.Datetime)
 @auto_alias("nperiods")
-def infer_nperiods(self: ExprOrStr, annualization_factor: int | None = None) -> pl.Expr:
+def infer_nperiods(self, annualization_factor: int | None = None) -> pl.Expr:
     af = annualization_factor or TRADING_DAYS_PER_YEAR
 
     return (
@@ -100,7 +95,7 @@ def _infer_from_deltas(series: pl.Series, af: int) -> pl.Series:
 @register(namespace="eod")
 @guard_expr("date_col", expected_dtype=pl.Datetime)
 @auto_alias("inferred_freq")
-def infer_freq(self: ExprOrStr) -> pl.Expr:
+def infer_freq(self) -> pl.Expr:
     """
     Infers human-readable calendar frequency label from a datetime column.
     Works best for: yearly, quarterly, monthly, weekly, daily.

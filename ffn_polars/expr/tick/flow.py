@@ -1,14 +1,16 @@
 import polars as pl
-from ffn_polars.utils import auto_alias, guard_expr, ExprOrStr
+from polars._typing import IntoExpr
+
 from ffn_polars.expr.tick.utils import SCALE
 from ffn_polars.registry import register
+from ffn_polars.utils import auto_alias, guard_expr
 
 
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Int64)
 @guard_expr("ts", expected_dtype=pl.Datetime)
 @auto_alias("volume_rate")
-def calc_volume_rate(self: ExprOrStr, ts: ExprOrStr, per: str = "s") -> pl.Expr:
+def calc_volume_rate(self, ts: IntoExpr, per: str = "s") -> pl.Expr:
     """
     Calculates volume traded per unit time.
 
@@ -37,7 +39,7 @@ def calc_volume_rate(self: ExprOrStr, ts: ExprOrStr, per: str = "s") -> pl.Expr:
 @register(namespace="tick")
 @guard_expr("self", expected_dtype=pl.Float64)
 @auto_alias("order_flow_imbalance")
-def calc_order_flow_imbalance(self: ExprOrStr) -> pl.Expr:
+def calc_order_flow_imbalance(self) -> pl.Expr:
     """
     Calculates Order Flow Imbalance (OFI) as the sum of signed volume.
 
@@ -60,7 +62,7 @@ def calc_order_flow_imbalance(self: ExprOrStr) -> pl.Expr:
 @guard_expr("self", expected_dtype=pl.Float64)
 @guard_expr("volume", expected_dtype=pl.Float64)
 @auto_alias("traded_value")
-def calc_traded_value(self: ExprOrStr, volume: ExprOrStr) -> pl.Expr:
+def calc_traded_value(self, volume: IntoExpr) -> pl.Expr:
     """
     Calculates traded value (price × volume sum).
 
@@ -83,7 +85,7 @@ def calc_traded_value(self: ExprOrStr, volume: ExprOrStr) -> pl.Expr:
 @guard_expr("price", expected_dtype=pl.Float64)
 @guard_expr("volume", expected_dtype=pl.Float64)
 @auto_alias("vwap")
-def calc_vwap(self: ExprOrStr, volume: ExprOrStr) -> pl.Expr:
+def calc_vwap(self, volume: IntoExpr) -> pl.Expr:
     """
     Calculates volume-weighted average price (VWAP).
 

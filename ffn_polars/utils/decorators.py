@@ -1,5 +1,6 @@
-import polars as pl
 from functools import wraps
+
+import polars as pl
 
 
 def auto_alias(suffix: str):
