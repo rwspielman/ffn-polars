@@ -47,4 +47,4 @@ dev = [
 [tool.poetry.dependencies]
 mkdocs = "^1.5.3"
 mkdocs-material = "^9.5.2"
-mkdocstrings = { extras = ["python"], version = "^0.24.0" }
+mkdocstrings = { extras = ["python"], version = "^1.0.0" }
